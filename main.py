@@ -1,5 +1,5 @@
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -34,8 +34,24 @@ def create_application(data: schemas.ApplicationCreate, db: Session = Depends(ge
 
 
 @app.get("/applications", response_model=List[schemas.ApplicationOut])
-def list_applications(db: Session = Depends(get_db)):
-    return db.query(models.Application).all()
+def list_applications(
+    status: Optional[str] = None,
+    q: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.Application)
+
+    if status:
+        query = query.filter(models.Application.status == status)
+
+    if q:
+        search = f"%{q}%"
+        query = query.filter(
+            models.Application.company.ilike(search)
+            | models.Application.role.ilike(search)
+        )
+
+    return query.all()
 
 
 @app.put("/applications/{app_id}", response_model=schemas.ApplicationOut)
