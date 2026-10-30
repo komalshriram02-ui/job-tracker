@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 import models
@@ -36,3 +36,28 @@ def create_application(data: schemas.ApplicationCreate, db: Session = Depends(ge
 @app.get("/applications", response_model=List[schemas.ApplicationOut])
 def list_applications(db: Session = Depends(get_db)):
     return db.query(models.Application).all()
+
+
+@app.put("/applications/{app_id}", response_model=schemas.ApplicationOut)
+def update_application(app_id: int, data: schemas.ApplicationUpdate, db: Session = Depends(get_db)):
+    application = db.query(models.Application).filter(models.Application.id == app_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(application, field, value)
+
+    db.commit()
+    db.refresh(application)
+    return application
+
+
+@app.delete("/applications/{app_id}")
+def delete_application(app_id: int, db: Session = Depends(get_db)):
+    application = db.query(models.Application).filter(models.Application.id == app_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    db.delete(application)
+    db.commit()
+    return {"message": "Application deleted"}
