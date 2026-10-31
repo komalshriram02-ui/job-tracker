@@ -5,9 +5,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+import auth
 import models
 import schemas
-import auth
 from database import engine, get_db
 
 models.Base.metadata.create_all(bind=engine)
@@ -21,13 +21,18 @@ def home():
 
 
 @app.post("/applications", response_model=schemas.ApplicationOut)
-def create_application(data: schemas.ApplicationCreate, db: Session = Depends(get_db)):
+def create_application(
+    data: schemas.ApplicationCreate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
     new_app = models.Application(
         company=data.company,
         role=data.role,
         status=data.status,
         applied_date=data.applied_date or date.today(),
         notes=data.notes,
+        owner_id=user.id,
     )
     db.add(new_app)
     db.commit()
@@ -40,8 +45,9 @@ def list_applications(
     status: Optional[str] = None,
     q: Optional[str] = None,
     db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
 ):
-    query = db.query(models.Application)
+    query = db.query(models.Application).filter(models.Application.owner_id == user.id)
 
     if status:
         query = query.filter(models.Application.status == status)
@@ -57,8 +63,17 @@ def list_applications(
 
 
 @app.put("/applications/{app_id}", response_model=schemas.ApplicationOut)
-def update_application(app_id: int, data: schemas.ApplicationUpdate, db: Session = Depends(get_db)):
-    application = db.query(models.Application).filter(models.Application.id == app_id).first()
+def update_application(
+    app_id: int,
+    data: schemas.ApplicationUpdate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    application = (
+        db.query(models.Application)
+        .filter(models.Application.id == app_id, models.Application.owner_id == user.id)
+        .first()
+    )
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
 
@@ -71,8 +86,16 @@ def update_application(app_id: int, data: schemas.ApplicationUpdate, db: Session
 
 
 @app.delete("/applications/{app_id}")
-def delete_application(app_id: int, db: Session = Depends(get_db)):
-    application = db.query(models.Application).filter(models.Application.id == app_id).first()
+def delete_application(
+    app_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    application = (
+        db.query(models.Application)
+        .filter(models.Application.id == app_id, models.Application.owner_id == user.id)
+        .first()
+    )
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
 
@@ -93,7 +116,7 @@ def register(data: schemas.UserCreate, db: Session = Depends(get_db)):
     )
     db.add(user)
     db.commit()
-    return {"message": "User registered"}    
+    return {"message": "User registered"}
 
 
 @app.post("/auth/login")
