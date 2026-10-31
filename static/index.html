@@ -91,6 +91,7 @@
             padding: 10px 0;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             gap: 10px;
         }
 
@@ -98,12 +99,23 @@
             color: #666;
         }
 
-        .badge {
-            background: #eef2ff;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            height: fit-content;
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .actions select {
+            width: auto;
+            margin: 0;
+            padding: 8px;
+        }
+
+        .delbtn {
+            width: auto;
+            margin: 0;
+            padding: 8px 12px;
+            background: #e5484d;
         }
     </style>
 </head>
@@ -168,6 +180,13 @@
             return el;
         }
 
+        function authHeaders() {
+            return {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + localStorage.getItem("token"),
+            };
+        }
+
         async function register() {
             const res = await fetch("/auth/register", {
                 method: "POST",
@@ -206,9 +225,7 @@
         }
 
         async function api(path) {
-            const res = await fetch(path, {
-                headers: { Authorization: "Bearer " + localStorage.getItem("token") },
-            });
+            const res = await fetch(path, { headers: authHeaders() });
             if (res.status === 401) {
                 logout();
                 throw new Error("Not logged in");
@@ -227,10 +244,7 @@
 
             const res = await fetch("/applications", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + localStorage.getItem("token"),
-                },
+                headers: authHeaders(),
                 body: JSON.stringify({
                     company,
                     role,
@@ -245,6 +259,24 @@
 
             ["company", "role", "notes"].forEach((id) => (document.getElementById(id).value = ""));
             addMsg.textContent = "";
+            loadDashboard();
+        }
+
+        async function updateStatus(id, status) {
+            await fetch("/applications/" + id, {
+                method: "PUT",
+                headers: authHeaders(),
+                body: JSON.stringify({ status }),
+            });
+            loadDashboard();
+        }
+
+        async function deleteApplication(id) {
+            if (!confirm("Delete this application?")) return;
+            await fetch("/applications/" + id, {
+                method: "DELETE",
+                headers: authHeaders(),
+            });
             loadDashboard();
         }
 
@@ -273,10 +305,25 @@
             }
             apps.forEach((a) => {
                 const row = makeEl("div", undefined, "row");
+
                 const left = makeEl("div");
                 left.append(makeEl("b", a.company), " - " + a.role, document.createElement("br"));
                 left.append(makeEl("small", a.applied_date + (a.notes ? "  |  " + a.notes : "")));
-                row.append(left, makeEl("span", a.status, "badge"));
+
+                const right = makeEl("div", undefined, "actions");
+                const sel = document.createElement("select");
+                STATUSES.forEach((s) => {
+                    const opt = makeEl("option", s);
+                    opt.selected = s === a.status;
+                    sel.append(opt);
+                });
+                sel.onchange = () => updateStatus(a.id, sel.value);
+
+                const del = makeEl("button", "Delete", "delbtn");
+                del.onclick = () => deleteApplication(a.id);
+
+                right.append(sel, del);
+                row.append(left, right);
                 list.append(row);
             });
         }
