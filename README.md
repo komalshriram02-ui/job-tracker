@@ -1,4 +1,7 @@
 # Job Application Tracker
+**Live demo:** https://job-tracker-k8ob.onrender.com
+
+_Note: hosted on a free plan, so the first load may take about 50 seconds._
 
 A full-stack web app to track job applications. Built with Python, FastAPI and SQLAlchemy.
 
@@ -18,7 +21,7 @@ A full-stack web app to track job applications. Built with Python, FastAPI and S
 ## Tech Stack
 
 - **Backend:** Python, FastAPI, SQLAlchemy
-- **Database:** SQLite
+- **Database:** PostgreSQL (Neon)
 - **Auth:** JWT (PyJWT), Argon2 (pwdlib)
 - **Frontend:** HTML, CSS, JavaScript
 
