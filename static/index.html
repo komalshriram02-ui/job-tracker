@@ -23,6 +23,7 @@
         }
 
         input,
+        select,
         button {
             width: 100%;
             padding: 10px;
@@ -122,9 +123,26 @@
             <h2 style="margin:0">My Applications</h2>
             <button onclick="logout()">Logout</button>
         </div>
+
         <div class="card">
             <div class="stats" id="stats"></div>
         </div>
+
+        <div class="card">
+            <h3 style="margin-top:0">Add Application</h3>
+            <input id="company" placeholder="Company">
+            <input id="role" placeholder="Role">
+            <select id="status">
+                <option>Applied</option>
+                <option>Interview</option>
+                <option>Offer</option>
+                <option>Rejected</option>
+            </select>
+            <input id="notes" placeholder="Notes (optional)">
+            <button onclick="addApplication()">Add</button>
+            <div id="addMsg" style="color:#c00"></div>
+        </div>
+
         <div class="card">
             <div id="list"></div>
         </div>
@@ -196,6 +214,38 @@
                 throw new Error("Not logged in");
             }
             return res.json();
+        }
+
+        async function addApplication() {
+            const addMsg = document.getElementById("addMsg");
+            const company = document.getElementById("company").value.trim();
+            const role = document.getElementById("role").value.trim();
+            if (!company || !role) {
+                addMsg.textContent = "Company and role are required";
+                return;
+            }
+
+            const res = await fetch("/applications", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + localStorage.getItem("token"),
+                },
+                body: JSON.stringify({
+                    company,
+                    role,
+                    status: document.getElementById("status").value,
+                    notes: document.getElementById("notes").value,
+                }),
+            });
+            if (!res.ok) {
+                addMsg.textContent = "Could not add application";
+                return;
+            }
+
+            ["company", "role", "notes"].forEach((id) => (document.getElementById(id).value = ""));
+            addMsg.textContent = "";
+            loadDashboard();
         }
 
         async function loadDashboard() {
