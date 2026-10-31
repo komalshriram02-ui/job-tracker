@@ -24,3 +24,8 @@ class ApplicationOut(ApplicationCreate):
     id: int
 
     model_config = {"from_attributes": True}
+
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
