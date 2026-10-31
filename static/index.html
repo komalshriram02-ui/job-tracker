@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6fa;
+            max-width: 420px;
+            margin: 60px auto;
+            padding: 0 12px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px #0003;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #2f6fed;
+            color: #fff;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #msg {
+            min-height: 20px;
+            color: #c00;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>Job Application Tracker</h2>
+        <input id="username" placeholder="Username">
+        <input id="password" type="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button onclick="register()">Register</button>
+        <div id="msg"></div>
+    </div>
+
+    <script>
+        const msg = document.getElementById("msg");
+
+        function showError(data) {
+            msg.style.color = "#c00";
+            if (Array.isArray(data.detail)) {
+                msg.textContent = data.detail[0].msg.replace("Value error, ", "");
+            } else {
+                msg.textContent = data.detail;
+            }
+        }
+
+        async function register() {
+            const res = await fetch("/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: document.getElementById("username").value,
+                    password: document.getElementById("password").value,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) return showError(data);
+            msg.style.color = "green";
+            msg.textContent = "Registered! Now login.";
+        }
+
+        async function login() {
+            const res = await fetch("/auth/login", {
+                method: "POST",
+                body: new URLSearchParams({
+                    username: document.getElementById("username").value,
+                    password: document.getElementById("password").value,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) return showError(data);
+            localStorage.setItem("token", data.access_token);
+            msg.style.color = "green";
+            msg.textContent = "Login successful!";
+        }
+    </script>
+</body>
+
+</html>

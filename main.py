@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import FileResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,7 @@ app = FastAPI(title="Job Application Tracker")
 
 @app.get("/")
 def home():
-    return {"message": "Job Tracker is running"}
+    return FileResponse("static/index.html")
 
 
 @app.post("/applications", response_model=schemas.ApplicationOut)
