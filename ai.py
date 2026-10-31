@@ -64,3 +64,41 @@ def write_cover_letter(company: str, role: str, skills: str, about_me: str) -> s
         return response.text
     except Exception:
         raise HTTPException(status_code=502, detail="AI service error, try again")
+
+
+class InterviewQuestion(BaseModel):
+    question: str
+    tip: str
+
+
+class InterviewPrep(BaseModel):
+    questions: list[InterviewQuestion]
+
+
+def interview_questions(company: str, role: str, skills: str) -> dict:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI is not configured")
+
+    client = genai.Client(api_key=api_key)
+    prompt = (
+        "Give 6 likely interview questions for a fresher applying for the job below: "
+        "4 technical questions and 2 HR questions. For each question, give a one-line "
+        "tip on how to answer it well.\n\n"
+        f"Company: {company[:100]}\n"
+        f"Role: {role[:100]}\n"
+        f"Key skills required: {skills[:300]}"
+    )
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=InterviewPrep,
+            ),
+        )
+        return json.loads(response.text)
+    except Exception:
+        raise HTTPException(status_code=502, detail="AI service error, try again")        
+

@@ -167,4 +167,12 @@ def ai_cover_letter(
     user: models.User = Depends(auth.get_current_user),
 ):
     letter = ai.write_cover_letter(data.company, data.role, data.skills, data.about_me)
-    return {"cover_letter": letter}    
+    return {"cover_letter": letter}
+
+
+@app.post("/ai/interview-questions")
+def ai_interview_questions(
+    data: schemas.InterviewIn,
+    user: models.User = Depends(auth.get_current_user),
+):
+    return ai.interview_questions(data.company, data.role, data.skills)        

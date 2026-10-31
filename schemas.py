@@ -55,4 +55,10 @@ class CoverLetterIn(BaseModel):
     company: str = Field(min_length=1, max_length=100)
     role: str = Field(min_length=1, max_length=100)
     skills: str = Field(default="", max_length=300)
-    about_me: str = Field(default="", max_length=500)    
+    about_me: str = Field(default="", max_length=500)
+
+
+class InterviewIn(BaseModel):
+    company: str = Field(min_length=1, max_length=100)
+    role: str = Field(min_length=1, max_length=100)
+    skills: str = Field(default="", max_length=300)        

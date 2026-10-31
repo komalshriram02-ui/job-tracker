@@ -378,6 +378,11 @@
                         style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:8px"></textarea>
                     <button class="btn ghost" onclick="copyLetter()">Copy</button>
                 </div>
+                <div id="ipCard"
+                    style="display:none;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px">
+                    <h3 id="ipTitle" style="margin:0 0 8px">Interview Prep</h3>
+                    <div id="ipList"></div>
+                </div>
                 <div class="toolbar">
                     <input id="search" placeholder="Search company or role" oninput="loadDashboard()">
                     <select id="filter" onchange="loadDashboard()">
@@ -564,6 +569,45 @@
             navigator.clipboard.writeText(document.getElementById("clText").value);
         }
 
+        async function interviewPrep(a, btn) {
+            const card = document.getElementById("ipCard");
+            const list = document.getElementById("ipList");
+            const old = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "Thinking...";
+            try {
+                const res = await fetch("/ai/interview-questions", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        company: a.company,
+                        role: a.role,
+                        skills: (a.notes || "").slice(0, 300),
+                    }),
+                });
+                const data = await res.json();
+                card.style.display = "block";
+                document.getElementById("ipTitle").textContent = "Interview Prep - " + a.role + " at " + a.company;
+                list.replaceChildren();
+                if (!res.ok) {
+                    list.append(makeEl("p", typeof data.detail === "string" ? data.detail : "Could not get questions"));
+                } else {
+                    data.questions.forEach((q, i) => {
+                        const item = makeEl("div");
+                        item.style.marginBottom = "10px";
+                        item.append(makeEl("b", (i + 1) + ". " + q.question), document.createElement("br"));
+                        item.append(makeEl("small", "Tip: " + q.tip));
+                        list.append(item);
+                    });
+                }
+                card.scrollIntoView({ behavior: "smooth" });
+            } catch (e) {
+                alert("Network error, try again");
+            }
+            btn.disabled = false;
+            btn.textContent = old;
+        }
+
         async function updateStatus(id, status) {
             await fetch("/applications/" + id, {
                 method: "PUT",
@@ -622,7 +666,10 @@
                 const cl = makeEl("button", "Cover Letter", "btn ghost");
                 cl.style.padding = "7px 12px";
                 cl.onclick = () => generateLetter(a, cl);
-                right.append(sel, cl, del);
+                const ip = makeEl("button", "Interview Prep", "btn ghost");
+                ip.style.padding = "7px 12px";
+                ip.onclick = () => interviewPrep(a, ip);
+                right.append(sel, cl, ip, del);
                 row.append(left, right);
                 list.append(row);
             });
