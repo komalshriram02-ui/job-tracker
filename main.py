@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import auth
+import rate_limit
 import models
 import schemas
 from database import engine, get_db
@@ -122,10 +123,15 @@ def register(data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/auth/login")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username == form.username).first()
+    username = form.username.strip().lower()
+    rate_limit.check_locked(username)
+
+    user = db.query(models.User).filter(models.User.username == username).first()
     if not user or not auth.verify_password(form.password, user.hashed_password):
+        rate_limit.record_failure(username)
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    rate_limit.reset(username)
     token = auth.create_token(user.username)
     return {"access_token": token, "token_type": "bearer"}
 

@@ -1,3 +1,9 @@
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -9,7 +15,9 @@ from sqlalchemy.orm import Session
 import models
 from database import get_db
 
-SECRET_KEY = "change-this-secret-later"
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY missing in .env file")
 ALGORITHM = "HS256"
 
 password_hash = PasswordHash.recommended()

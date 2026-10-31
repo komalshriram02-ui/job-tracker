@@ -1,7 +1,9 @@
 
+import re
 from datetime import date
 from typing import Optional
-from pydantic import BaseModel
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class ApplicationCreate(BaseModel):
@@ -27,5 +29,20 @@ class ApplicationOut(ApplicationCreate):
 
 
 class UserCreate(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=30)
+    password: str = Field(min_length=8, max_length=64)
+
+    @field_validator("username")
+    @classmethod
+    def clean_username(cls, v):
+        v = v.strip().lower()
+        if not re.fullmatch(r"[a-z0-9_]+", v):
+            raise ValueError("Only letters, numbers and underscore allowed")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def strong_password(cls, v):
+        if not (re.search(r"[A-Za-z]", v) and re.search(r"\d", v)):
+            raise ValueError("Password must have both letters and numbers")
+        return v
