@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import auth
@@ -127,3 +128,18 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
     token = auth.create_token(user.username)
     return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get("/stats")
+def get_stats(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    rows = (
+        db.query(models.Application.status, func.count(models.Application.id))
+        .filter(models.Application.owner_id == user.id)
+        .group_by(models.Application.status)
+        .all()
+    )
+    by_status = {status: count for status, count in rows}
+    return {"total": sum(by_status.values()), "by_status": by_status}
