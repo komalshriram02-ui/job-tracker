@@ -9,8 +9,8 @@
         body {
             font-family: Arial, sans-serif;
             background: #f5f6fa;
-            max-width: 420px;
-            margin: 60px auto;
+            max-width: 760px;
+            margin: 40px auto;
             padding: 0 12px;
         }
 
@@ -19,6 +19,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 1px 4px #0003;
+            margin-bottom: 16px;
         }
 
         input,
@@ -42,11 +43,72 @@
             min-height: 20px;
             color: #c00;
         }
+
+        #authBox {
+            max-width: 420px;
+            margin: 20px auto;
+        }
+
+        #dashboard {
+            display: none;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top button {
+            width: auto;
+            padding: 8px 16px;
+            background: #e5484d;
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            flex: 1;
+            min-width: 90px;
+            text-align: center;
+            background: #eef2ff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .stat b {
+            display: block;
+            font-size: 24px;
+        }
+
+        .row {
+            border-top: 1px solid #eee;
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .row small {
+            color: #666;
+        }
+
+        .badge {
+            background: #eef2ff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            height: fit-content;
+        }
     </style>
 </head>
 
 <body>
-    <div class="card">
+    <div id="authBox" class="card">
         <h2>Job Application Tracker</h2>
         <input id="username" placeholder="Username">
         <input id="password" type="password" placeholder="Password">
@@ -55,8 +117,22 @@
         <div id="msg"></div>
     </div>
 
+    <div id="dashboard">
+        <div class="card top">
+            <h2 style="margin:0">My Applications</h2>
+            <button onclick="logout()">Logout</button>
+        </div>
+        <div class="card">
+            <div class="stats" id="stats"></div>
+        </div>
+        <div class="card">
+            <div id="list"></div>
+        </div>
+    </div>
+
     <script>
         const msg = document.getElementById("msg");
+        const STATUSES = ["Applied", "Interview", "Offer", "Rejected"];
 
         function showError(data) {
             msg.style.color = "#c00";
@@ -65,6 +141,13 @@
             } else {
                 msg.textContent = data.detail;
             }
+        }
+
+        function makeEl(tag, text, cls) {
+            const el = document.createElement(tag);
+            if (text !== undefined) el.textContent = text;
+            if (cls) el.className = cls;
+            return el;
         }
 
         async function register() {
@@ -93,8 +176,63 @@
             const data = await res.json();
             if (!res.ok) return showError(data);
             localStorage.setItem("token", data.access_token);
-            msg.style.color = "green";
-            msg.textContent = "Login successful!";
+            document.getElementById("password").value = "";
+            msg.textContent = "";
+            loadDashboard();
+        }
+
+        function logout() {
+            localStorage.removeItem("token");
+            document.getElementById("dashboard").style.display = "none";
+            document.getElementById("authBox").style.display = "block";
+        }
+
+        async function api(path) {
+            const res = await fetch(path, {
+                headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+            });
+            if (res.status === 401) {
+                logout();
+                throw new Error("Not logged in");
+            }
+            return res.json();
+        }
+
+        async function loadDashboard() {
+            const stats = await api("/stats");
+            const apps = await api("/applications");
+
+            document.getElementById("authBox").style.display = "none";
+            document.getElementById("dashboard").style.display = "block";
+
+            const statsBox = document.getElementById("stats");
+            statsBox.replaceChildren();
+            const total = makeEl("div", undefined, "stat");
+            total.append(makeEl("b", stats.total), "Total");
+            statsBox.append(total);
+            STATUSES.forEach((s) => {
+                const box = makeEl("div", undefined, "stat");
+                box.append(makeEl("b", stats.by_status[s] || 0), s);
+                statsBox.append(box);
+            });
+
+            const list = document.getElementById("list");
+            list.replaceChildren();
+            if (apps.length === 0) {
+                list.append(makeEl("p", "No applications yet."));
+            }
+            apps.forEach((a) => {
+                const row = makeEl("div", undefined, "row");
+                const left = makeEl("div");
+                left.append(makeEl("b", a.company), " - " + a.role, document.createElement("br"));
+                left.append(makeEl("small", a.applied_date + (a.notes ? "  |  " + a.notes : "")));
+                row.append(left, makeEl("span", a.status, "badge"));
+                list.append(row);
+            });
+        }
+
+        if (localStorage.getItem("token")) {
+            loadDashboard().catch(() => { });
         }
     </script>
 </body>
