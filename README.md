@@ -18,6 +18,7 @@ _Note: hosted on a free plan, so the first load may take about 50 seconds._
 - Search and filter by company, role or status
 - Stats dashboard: total applications and count per status
 - AI auto-fill: paste a job description and Google Gemini fills in the company, role and key skills
+- AI cover letter generator: one click writes a short, tailored cover letter for any application
 - Responsive single-page UI (HTML, CSS, JavaScript)
 
 ## Tech Stack
@@ -41,7 +42,7 @@ _Note: hosted on a free plan, so the first load may take about 50 seconds._
 | DELETE | /applications/{id} | Delete an application |
 | GET | /stats | Application counts by status |
 | POST | /ai/extract | Extract company, role and skills from a job description |
-
+| POST | /ai/cover-letter | Generate a cover letter for an application |
 Interactive API docs are available at `/docs` when the server is running.
 
 ## How to Run Locally
