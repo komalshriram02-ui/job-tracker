@@ -19,6 +19,7 @@ _Note: hosted on a free plan, so the first load may take about 50 seconds._
 - Stats dashboard: total applications and count per status
 - AI auto-fill: paste a job description and Google Gemini fills in the company, role and key skills
 - AI cover letter generator: one click writes a short, tailored cover letter for any application
+- AI interview prep: get likely technical and HR questions with answer tips for each application
 - Responsive single-page UI (HTML, CSS, JavaScript)
 
 ## Tech Stack
@@ -43,6 +44,7 @@ _Note: hosted on a free plan, so the first load may take about 50 seconds._
 | GET | /stats | Application counts by status |
 | POST | /ai/extract | Extract company, role and skills from a job description |
 | POST | /ai/cover-letter | Generate a cover letter for an application |
+| POST | /ai/interview-questions | Get interview questions and tips for an application |
 Interactive API docs are available at `/docs` when the server is running.
 
 ## How to Run Locally
