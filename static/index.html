@@ -156,6 +156,14 @@
         </div>
 
         <div class="card">
+            <input id="search" placeholder="Search company or role" oninput="loadDashboard()">
+            <select id="filter" onchange="loadDashboard()">
+                <option value="">All statuses</option>
+                <option>Applied</option>
+                <option>Interview</option>
+                <option>Offer</option>
+                <option>Rejected</option>
+            </select>
             <div id="list"></div>
         </div>
     </div>
@@ -282,8 +290,11 @@
 
         async function loadDashboard() {
             const stats = await api("/stats");
-            const apps = await api("/applications");
-
+            const params = new URLSearchParams({
+                q: document.getElementById("search").value.trim(),
+                status: document.getElementById("filter").value,
+            });
+            const apps = await api("/applications?" + params);
             document.getElementById("authBox").style.display = "none";
             document.getElementById("dashboard").style.display = "block";
 
