@@ -48,4 +48,11 @@ class UserCreate(BaseModel):
         return v
 
 class JobDescriptionIn(BaseModel):
-    text: str = Field(min_length=20, max_length=8000)        
+    text: str = Field(min_length=20, max_length=8000)
+
+
+class CoverLetterIn(BaseModel):
+    company: str = Field(min_length=1, max_length=100)
+    role: str = Field(min_length=1, max_length=100)
+    skills: str = Field(default="", max_length=300)
+    about_me: str = Field(default="", max_length=500)    

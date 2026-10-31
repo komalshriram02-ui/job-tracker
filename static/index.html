@@ -367,6 +367,17 @@
             </div>
 
             <div class="card">
+
+                <input id="aboutMe"
+                    placeholder="About you for cover letters, e.g. Final year B.Tech AI student, built a FastAPI project. Name: Komal"
+                    style="margin-bottom:10px" onchange="localStorage.setItem('aboutMe', this.value)">
+                <div id="clCard"
+                    style="display:none;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:12px">
+                    <h3 id="clTitle" style="margin:0 0 8px">Cover Letter</h3>
+                    <textarea id="clText" rows="10"
+                        style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:8px"></textarea>
+                    <button class="btn ghost" onclick="copyLetter()">Copy</button>
+                </div>
                 <div class="toolbar">
                     <input id="search" placeholder="Search company or role" oninput="loadDashboard()">
                     <select id="filter" onchange="loadDashboard()">
@@ -518,6 +529,41 @@
             btn.textContent = "Auto-fill with AI";
         }
 
+        async function generateLetter(a, btn) {
+            const card = document.getElementById("clCard");
+            const box = document.getElementById("clText");
+            const old = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "Writing...";
+            try {
+                const res = await fetch("/ai/cover-letter", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        company: a.company,
+                        role: a.role,
+                        skills: (a.notes || "").slice(0, 300),
+                        about_me: document.getElementById("aboutMe").value.slice(0, 500),
+                    }),
+                });
+                const data = await res.json();
+                card.style.display = "block";
+                document.getElementById("clTitle").textContent = "Cover Letter - " + a.company;
+                box.value = res.ok
+                    ? data.cover_letter
+                    : typeof data.detail === "string" ? data.detail : "Could not write the letter";
+                card.scrollIntoView({ behavior: "smooth" });
+            } catch (e) {
+                alert("Network error, try again");
+            }
+            btn.disabled = false;
+            btn.textContent = old;
+        }
+
+        function copyLetter() {
+            navigator.clipboard.writeText(document.getElementById("clText").value);
+        }
+
         async function updateStatus(id, status) {
             await fetch("/applications/" + id, {
                 method: "PUT",
@@ -573,13 +619,16 @@
                 sel.onchange = () => updateStatus(a.id, sel.value);
                 const del = makeEl("button", "Delete", "btn danger");
                 del.onclick = () => deleteApplication(a.id);
-                right.append(sel, del);
-
+                const cl = makeEl("button", "Cover Letter", "btn ghost");
+                cl.style.padding = "7px 12px";
+                cl.onclick = () => generateLetter(a, cl);
+                right.append(sel, cl, del);
                 row.append(left, right);
                 list.append(row);
             });
         }
 
+        document.getElementById("aboutMe").value = localStorage.getItem("aboutMe") || "";
         if (localStorage.getItem("token")) {
             loadDashboard().catch(() => { });
         }

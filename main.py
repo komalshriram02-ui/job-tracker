@@ -159,3 +159,12 @@ def ai_extract(
     user: models.User = Depends(auth.get_current_user),
 ):
     return ai.extract_job_details(data.text)
+
+
+@app.post("/ai/cover-letter")
+def ai_cover_letter(
+    data: schemas.CoverLetterIn,
+    user: models.User = Depends(auth.get_current_user),
+):
+    letter = ai.write_cover_letter(data.company, data.role, data.skills, data.about_me)
+    return {"cover_letter": letter}    
