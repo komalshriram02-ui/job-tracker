@@ -46,3 +46,6 @@ class UserCreate(BaseModel):
         if not (re.search(r"[A-Za-z]", v) and re.search(r"\d", v)):
             raise ValueError("Password must have both letters and numbers")
         return v
+
+class JobDescriptionIn(BaseModel):
+    text: str = Field(min_length=20, max_length=8000)        

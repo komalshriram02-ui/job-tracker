@@ -346,6 +346,11 @@
 
             <div class="card">
                 <h3 style="margin-bottom:12px">Add Application</h3>
+                <textarea id="jd" rows="4" placeholder="Paste a job description here and let AI fill the form..."
+                    style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:8px"></textarea>
+                <button class="btn ghost" id="aiBtn" onclick="autoFill()" style="margin-bottom:14px">Auto-fill with
+                    AI</button>
+                <div id="aiMsg" style="color:#e5484d;font-size:14px;margin-bottom:10px"></div>
                 <div class="form-grid">
                     <input id="company" placeholder="Company">
                     <input id="role" placeholder="Role">
@@ -480,6 +485,37 @@
             ["company", "role", "notes"].forEach((id) => (document.getElementById(id).value = ""));
             addMsg.textContent = "";
             loadDashboard();
+        }
+        async function autoFill() {
+            const aiMsg = document.getElementById("aiMsg");
+            const btn = document.getElementById("aiBtn");
+            const text = document.getElementById("jd").value.trim();
+            if (text.length < 20) {
+                aiMsg.textContent = "Paste a longer job description (at least 20 characters)";
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = "Reading...";
+            aiMsg.textContent = "";
+            try {
+                const res = await fetch("/ai/extract", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ text }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    aiMsg.textContent = typeof data.detail === "string" ? data.detail : "Could not read the job description";
+                } else {
+                    document.getElementById("company").value = data.company;
+                    document.getElementById("role").value = data.role;
+                    document.getElementById("notes").value = data.notes;
+                }
+            } catch (e) {
+                aiMsg.textContent = "Network error, try again";
+            }
+            btn.disabled = false;
+            btn.textContent = "Auto-fill with AI";
         }
 
         async function updateStatus(id, status) {

@@ -6,3 +6,4 @@ pyjwt
 python-multipart
 python-dotenv
 psycopg[binary]
+google-genai

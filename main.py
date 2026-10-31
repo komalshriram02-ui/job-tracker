@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import auth
+import ai
 import rate_limit
 import models
 import schemas
@@ -150,3 +151,11 @@ def get_stats(
     )
     by_status = {status: count for status, count in rows}
     return {"total": sum(by_status.values()), "by_status": by_status}
+
+
+@app.post("/ai/extract")
+def ai_extract(
+    data: schemas.JobDescriptionIn,
+    user: models.User = Depends(auth.get_current_user),
+):
+    return ai.extract_job_details(data.text)
