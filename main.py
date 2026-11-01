@@ -127,7 +127,11 @@ def register(data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/auth/login")
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(
+    response: Response,
+    form: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
     username = form.username.strip().lower()
     rate_limit.check_locked(username)
 
@@ -138,7 +142,14 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
     rate_limit.reset(username)
     token = auth.create_token(user.username)
+    auth.set_login_cookie(response, token)
     return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/auth/logout")
+def logout(response: Response):
+    auth.clear_login_cookie(response)
+    return {"message": "Logged out"}
 
 
 @app.get("/stats")
