@@ -1,9 +1,12 @@
+import csv
+import io
+
 from datetime import date
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -177,3 +180,40 @@ def ai_interview_questions(data: schemas.InterviewIn, user: models.User = Depend
 @app.post("/ai/match")
 def ai_match(data: schemas.MatchIn, user: models.User = Depends(ai_user)):
     return ai.match_resume(data.resume, data.job_description)
+
+
+def _safe_cell(value) -> str:
+    # Stops spreadsheet formula injection (cells starting with = + - @)
+    text = "" if value is None else str(value)
+    if text[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + text
+    return text
+
+
+@app.get("/applications/export")
+def export_applications(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(auth.get_current_user),
+):
+    apps = (
+        db.query(models.Application)
+        .filter(models.Application.owner_id == user.id)
+        .order_by(models.Application.applied_date.desc())
+        .all()
+    )
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Company", "Role", "Status", "Applied Date", "Notes"])
+    for a in apps:
+        writer.writerow([
+            _safe_cell(a.company),
+            _safe_cell(a.role),
+            _safe_cell(a.status),
+            a.applied_date,
+            _safe_cell(a.notes),
+        ])
+    return Response(
+        content="\ufeff" + buffer.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=applications.csv"},
+    )    
