@@ -34,3 +34,20 @@ def record_failure(key: str):
 
 def reset(key: str):
     _failed.pop(key, None)
+
+
+_ai_calls = {}
+AI_MAX_CALLS = 20
+AI_WINDOW = 3600
+
+
+def check_ai_limit(user_id: int):
+    now = time.time()
+    calls = [t for t in _ai_calls.get(user_id, []) if now - t < AI_WINDOW]
+    if len(calls) >= AI_MAX_CALLS:
+        raise HTTPException(
+            status_code=429,
+            detail="AI limit reached (20 per hour). Please try again later.",
+        )
+    calls.append(now)
+    _ai_calls[user_id] = calls    

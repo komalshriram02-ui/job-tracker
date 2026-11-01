@@ -153,34 +153,27 @@ def get_stats(
     return {"total": sum(by_status.values()), "by_status": by_status}
 
 
+def ai_user(user: models.User = Depends(auth.get_current_user)):
+    rate_limit.check_ai_limit(user.id)
+    return user
+
+
 @app.post("/ai/extract")
-def ai_extract(
-    data: schemas.JobDescriptionIn,
-    user: models.User = Depends(auth.get_current_user),
-):
+def ai_extract(data: schemas.JobDescriptionIn, user: models.User = Depends(ai_user)):
     return ai.extract_job_details(data.text)
 
 
 @app.post("/ai/cover-letter")
-def ai_cover_letter(
-    data: schemas.CoverLetterIn,
-    user: models.User = Depends(auth.get_current_user),
-):
+def ai_cover_letter(data: schemas.CoverLetterIn, user: models.User = Depends(ai_user)):
     letter = ai.write_cover_letter(data.company, data.role, data.skills, data.about_me)
     return {"cover_letter": letter}
 
 
 @app.post("/ai/interview-questions")
-def ai_interview_questions(
-    data: schemas.InterviewIn,
-    user: models.User = Depends(auth.get_current_user),
-):
+def ai_interview_questions(data: schemas.InterviewIn, user: models.User = Depends(ai_user)):
     return ai.interview_questions(data.company, data.role, data.skills)
 
 
 @app.post("/ai/match")
-def ai_match(
-    data: schemas.MatchIn,
-    user: models.User = Depends(auth.get_current_user),
-):
-    return ai.match_resume(data.resume, data.job_description)            
+def ai_match(data: schemas.MatchIn, user: models.User = Depends(ai_user)):
+    return ai.match_resume(data.resume, data.job_description)
