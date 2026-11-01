@@ -6,6 +6,12 @@ A full-stack web app to track job applications, with AI-powered job description 
 
 _Note: hosted on a free plan, so the first load may take about 50 seconds._
 
+## Screenshots
+
+![Landing page](screenshots/landing.png)
+
+![Dashboard](screenshots/dashboard.png)
+
 ## Features
 
 - User registration and login with JWT authentication
