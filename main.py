@@ -175,4 +175,12 @@ def ai_interview_questions(
     data: schemas.InterviewIn,
     user: models.User = Depends(auth.get_current_user),
 ):
-    return ai.interview_questions(data.company, data.role, data.skills)        
+    return ai.interview_questions(data.company, data.role, data.skills)
+
+
+@app.post("/ai/match")
+def ai_match(
+    data: schemas.MatchIn,
+    user: models.User = Depends(auth.get_current_user),
+):
+    return ai.match_resume(data.resume, data.job_description)            

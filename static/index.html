@@ -343,6 +343,17 @@
         <section id="dashboard">
             <h2>My Applications</h2>
             <div class="stats" id="stats"></div>
+            <div class="card">
+                <h3 style="margin-bottom:12px">Resume Match Score</h3>
+                <textarea id="mResume" rows="4"
+                    placeholder="Paste your resume text here (remove phone, email and address)"
+                    style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:8px"></textarea>
+                <textarea id="mJd" rows="4" placeholder="Paste the job description here"
+                    style="width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:8px"></textarea>
+                <button class="btn" id="matchBtn" onclick="checkMatch()">Check Match</button>
+                <div id="matchMsg" style="color:#e5484d;font-size:14px;margin-top:8px"></div>
+                <div id="matchOut"></div>
+            </div>
 
             <div class="card">
                 <h3 style="margin-bottom:12px">Add Application</h3>
@@ -606,6 +617,53 @@
             }
             btn.disabled = false;
             btn.textContent = old;
+        }
+
+        function addGroup(parent, title, items) {
+            const ul = document.createElement("ul");
+            ul.style.margin = "4px 0 12px";
+            items.forEach((i) => ul.append(makeEl("li", i)));
+            parent.append(makeEl("b", title), ul);
+        }
+
+        async function checkMatch() {
+            const msgBox = document.getElementById("matchMsg");
+            const out = document.getElementById("matchOut");
+            const btn = document.getElementById("matchBtn");
+            const resume = document.getElementById("mResume").value.trim();
+            const jd = document.getElementById("mJd").value.trim();
+            out.replaceChildren();
+            if (resume.length < 50 || jd.length < 20) {
+                msgBox.textContent = "Paste your resume (at least 50 characters) and a job description (at least 20 characters)";
+                return;
+            }
+            msgBox.textContent = "";
+            btn.disabled = true;
+            btn.textContent = "Checking...";
+            try {
+                const res = await fetch("/ai/match", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ resume, job_description: jd }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    msgBox.textContent = typeof data.detail === "string"
+                        ? data.detail
+                        : "Could not check the match. Each text can be at most 4000 characters.";
+                } else {
+                    const score = makeEl("div", data.score + " / 100");
+                    score.style.cssText = "font-size:32px;font-weight:700;margin:10px 0";
+                    out.append(score);
+                    addGroup(out, "Matched skills", data.matched_skills);
+                    addGroup(out, "Missing skills", data.missing_skills);
+                    addGroup(out, "Suggestions", data.suggestions);
+                }
+            } catch (e) {
+                msgBox.textContent = "Network error, try again";
+            }
+            btn.disabled = false;
+            btn.textContent = "Check Match";
         }
 
         async function updateStatus(id, status) {

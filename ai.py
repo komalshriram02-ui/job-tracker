@@ -100,5 +100,41 @@ def interview_questions(company: str, role: str, skills: str) -> dict:
         )
         return json.loads(response.text)
     except Exception:
-        raise HTTPException(status_code=502, detail="AI service error, try again")        
+        raise HTTPException(status_code=502, detail="AI service error, try again")
+
+
+class MatchResult(BaseModel):
+    score: int
+    matched_skills: list[str]
+    missing_skills: list[str]
+    suggestions: list[str]
+
+
+def match_resume(resume: str, job_description: str) -> dict:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI is not configured")
+
+    client = genai.Client(api_key=api_key)
+    prompt = (
+        "Compare the resume with the job description. Give: a match score from 0 to 100, "
+        "up to 8 skills that match, up to 8 important skills that are missing, and 3 short "
+        "suggestions to improve the resume for this job. Be honest and never invent skills "
+        "the candidate does not have.\n\n"
+        "RESUME:\n" + resume[:4000] + "\n\n"
+        "JOB DESCRIPTION:\n" + job_description[:4000]
+    )
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=MatchResult,
+            ),
+        )
+        return json.loads(response.text)
+    except Exception as e:
+        print("Gemini error:", repr(e))
+        raise HTTPException(status_code=502, detail="AI service error, try again")                
 
